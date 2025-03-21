@@ -14,7 +14,7 @@ PROCESSED_DATA_DIR = DATA_DIR / "processed"
 RAW_DATA_FILE = DATA_DIR / "Data.csv"
 
 # MLflow settings
-MLFLOW_TRACKING_URI = "sqlite:///mlflow.db"
+MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
 EXPERIMENT_NAME = "loan_approval_fairness"
 
 # Model settings

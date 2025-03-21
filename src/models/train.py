@@ -22,11 +22,11 @@ from src.config.config import (
     RAW_DATA_FILE,
     BEST_MODEL_PATH
 )
-from src.preprocessing.preprocessor import LoanPreprocessor
 from src.fairness.metrics import FairnessMetrics
 
 def load_data() -> pd.DataFrame:
     """Load and validate the raw data."""
+    print(f"Loading data from {RAW_DATA_FILE}")
     if not RAW_DATA_FILE.exists():
         raise FileNotFoundError(f"Data file not found at {RAW_DATA_FILE}")
     
@@ -45,13 +45,12 @@ def train_model(data: pd.DataFrame):
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT_NAME)
     
-    with mlflow.start_run(run_name="pycaret_automl"):
-        # Initialize preprocessor
-        preprocessor = LoanPreprocessor()
-        processed_data = preprocessor.fit_transform(data)
+    try:
+        # Directly use the data without preprocessing
+        processed_data = data
         
         # Log preprocessing parameters
-        mlflow.log_param("preprocessing", "LoanPreprocessor")
+        mlflow.log_param("preprocessing", "None")
         
         # Set up PyCaret
         setup(data=processed_data,
@@ -61,48 +60,31 @@ def train_model(data: pd.DataFrame):
               normalize=PYCARET_SETUP_CONFIG['normalize'],
               transformation=PYCARET_SETUP_CONFIG['transformation'],
               ignore_features=PYCARET_SETUP_CONFIG['ignore_features'],
-              silent=True,
-              verbose=False)
+              data_split_shuffle=True,)
         
         # Compare models and select best
         best_model = compare_models(n_select=1)
         
+        # Tune model
+        tuned_model = tune_model(best_model)
+        
         # Finalize model
-        final_model = finalize_model(best_model)
+        final_model = finalize_model(tuned_model)
         
-        # Get predictions for fairness evaluation
-        y_pred = predict_model(final_model, data=processed_data)['prediction_label']
+        # Log model
+        mlflow.sklearn.log_model(final_model, "best_model")
+        mlflow.log_param("session_id", 123)
+        mlflow.log_param("data_split_shuffle", True)
         
-        # Calculate fairness metrics
-        fairness = FairnessMetrics()
-        fairness_metrics = fairness.calculate_metrics(
-            processed_data[PYCARET_SETUP_CONFIG['target']].values,
-            y_pred.values,
-            processed_data['income_variability'].values
-        )
-        
-        # Log metrics
-        mlflow.log_metrics({
-            "accuracy": get_metrics()['Accuracy'],
-            "auc": get_metrics()['AUC'],
-            "precision": get_metrics()['Precision'],
-            "recall": get_metrics()['Recall'],
-            "f1": get_metrics()['F1'],
-            "disparate_impact": fairness_metrics['disparate_impact'],
-            "equal_opportunity_diff": fairness_metrics['equal_opportunity_difference']
-        })
-        
-        # Log fairness report
-        mlflow.log_text(fairness.get_fairness_report(), "fairness_report.txt")
-        
-        # Save the model and preprocessor
+        # Save the model
         save_model(final_model, str(BEST_MODEL_PATH))
-        joblib.dump(preprocessor, BEST_MODEL_PATH.parent / "preprocessor.pkl")
         
         print("\nTraining completed successfully!")
         print(f"Model saved to: {BEST_MODEL_PATH}")
-        print("\nFairness Report:")
-        print(fairness.get_fairness_report())
+        
+    except Exception as e:
+        print(f"Error during training: {str(e)}")
+        sys.exit(1)
 
 def main():
     """Main training pipeline."""

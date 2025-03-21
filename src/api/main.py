@@ -9,13 +9,13 @@ import numpy as np
 import joblib
 from pathlib import Path
 import sys
+import mlflow
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root))
 
 from src.config.config import BEST_MODEL_PATH
-from src.preprocessing.preprocessor import LoanPreprocessor
 
 app = FastAPI(
     title="Fair Loan Approval API",
@@ -41,12 +41,15 @@ class PredictionResponse(BaseModel):
     approval_probability: float
     fairness_metrics: dict
 
-# Load model and preprocessor
+# Set the MLflow tracking URI
+mlflow.set_tracking_uri('http://localhost:5000')
+
+# Load model from MLflow
 try:
-    model = joblib.load(BEST_MODEL_PATH)
-    preprocessor = joblib.load(BEST_MODEL_PATH.parent / "preprocessor.pkl")
+    model_uri = 'runs:/263669e8bdaa41ff8f7ffed5dfdf513d/best_model'
+    model = mlflow.pyfunc.load_model(model_uri)
 except Exception as e:
-    print(f"Error loading model: {str(e)}")
+    print(f"Error loading model from MLflow: {str(e)}")
     sys.exit(1)
 
 @app.get("/")
@@ -73,22 +76,29 @@ async def predict(application: LoanApplication):
         # Convert input to DataFrame
         input_data = pd.DataFrame([application.dict()])
         
-        # Preprocess input
-        processed_input = preprocessor.transform(input_data)
+        # Directly use the input data without preprocessing
+        processed_input = input_data
         
         # Make prediction
         prediction = model.predict(processed_input)[0]
-        probabilities = model.predict_proba(processed_input)[0]
+        
+        # Check if the model has predict_proba
+        if hasattr(model, "predict_proba"):
+            probabilities = model.predict_proba(processed_input)[0]
+            approval_probability = float(probabilities[1])
+        else:
+            # If predict_proba is not available, use a default probability
+            approval_probability = float(prediction)
         
         # Get fairness metrics for the protected group
         fairness_metrics = {
             "group": "High Income Variability" if application.income_variability == "High" else "Low Income Variability",
-            "group_approval_rate": float(probabilities[1])
+            "group_approval_rate": approval_probability
         }
         
         return PredictionResponse(
             loan_approved=bool(prediction),
-            approval_probability=float(probabilities[1]),
+            approval_probability=approval_probability,
             fairness_metrics=fairness_metrics
         )
         
@@ -103,8 +113,7 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "model_loaded": model is not None,
-        "preprocessor_loaded": preprocessor is not None
+        "model_loaded": model is not None
     }
 
 if __name__ == "__main__":
