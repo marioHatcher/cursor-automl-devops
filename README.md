@@ -1,104 +1,71 @@
-# Cursor AutoML DevOps - Fair Loan Approval System
+# Fair Loan Approval API (ML + DevOps)
 
-This project implements an automated machine learning pipeline for fair loan approval decisions, with a special focus on ensuring fairness for applicants with variable income sources.
+This project builds a machine learning pipeline for fair loan approval using PyCaret and FastAPI, integrated into a DevOps pipeline with Jenkins.
 
-## Project Overview
+## 🎯 Objectives
 
-The system uses PyCaret for AutoML and MLflow for experiment tracking to build a loan approval model that maintains both high performance and fairness across different income variability groups.
+1. Use **PyCaret** to automate model selection.
+2. Register experiments using **MLflow**.
+3. Detect the effect of **income variability** on loan approval.
+4. Save the best model and deploy it via **FastAPI**.
+5. Use **Jenkins** for CI/CD automation.
 
-### Key Features
-
-- Automated ML pipeline with PyCaret
-- Fairness metrics and bias detection
-- MLflow experiment tracking
-- FastAPI-based deployment
-- Continuous Integration/Deployment with Jenkins
-- Comprehensive testing suite
-
-## Project Structure
+## 🧪 Project Structure
 
 ```
-cursor-automl-devops/
+project/
 ├── src/
-│   ├── api/            # FastAPI service
-│   ├── config/         # Configuration files
-│   ├── data/           # Data processing
-│   ├── fairness/       # Fairness metrics
-│   ├── models/         # Model training
-│   ├── preprocessing/  # Feature engineering
-│   └── utils/         # Helper functions
-├── tests/
-│   ├── unit/          # Unit tests
-│   └── integration/   # Integration tests
-├── notebooks/         # Jupyter notebooks
-├── docs/             # Documentation
-├── Jenkinsfile       # CI/CD pipeline
-└── requirements.txt  # Dependencies
+│   ├── api/
+│   │   └── main.py          # FastAPI server
+│   ├── models/
+│   │   └── train.py         # Model training with PyCaret
+│   └── config/
+│       └── config.py        # Project configuration
+├── requirements.txt
+├── Jenkinsfile              # CI/CD pipeline
+└── README.md
 ```
 
-## Installation
+## 🚀 Jenkins Pipeline
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/cursor-automl-devops.git
-cd cursor-automl-devops
+1. Checks out the code from GitHub
+2. Sets up a Python virtual environment
+3. Installs dependencies
+4. Trains the model with PyCaret
+5. Starts FastAPI as a background service
+6. Validates the `/health` endpoint
+
+## 🔮 Prediction API
+
+- `POST /predict` with JSON input of loan application
+- `GET /health` to check API status
+
+## ✅ Example Input
+```json
+{
+  "age": 35,
+  "income": 55000,
+  "loan_amount": 20000,
+  "loan_term": 24,
+  "credit_score": 700,
+  "employment_status": "Employed",
+  "loan_purpose": "Home",
+  "existing_loans": 1,
+  "income_variability": "Low"
+}
 ```
 
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+## 📦 Output
+```json
+{
+  "loan_approved": true,
+  "approval_probability": 0.89,
+  "fairness_metrics": {
+    "group": "Low Income Variability",
+    "group_approval_rate": 0.89
+  }
+}
 ```
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-### Training the Model
-
-```bash
-python src/models/train.py
-```
-
-### Running the API
-
-```bash
-uvicorn src.api.main:app --reload
-```
-
-### Running Tests
-
-```bash
-pytest tests/
-```
-
-## Model Fairness
-
-The project implements several fairness metrics and debiasing techniques to ensure fair treatment of applicants with variable income:
-
-- Group fairness metrics
-- Equal opportunity difference
-- Disparate impact analysis
-- Bias mitigation techniques
-
-## API Endpoints
-
-- `POST /predict`: Get loan approval prediction
-- `GET /metrics`: Get model performance metrics
-- `GET /fairness`: Get fairness metrics
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
- 
+---
+That's it! Push to GitHub and Jenkins will handle the rest 🚀
