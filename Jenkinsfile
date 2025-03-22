@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PYTHON = 'python'                // Tu ejecutable ya es Python 3.11.7 ✅
+        PYTHON = 'python'                        // Ya estás en Python 3.11.7
         VENV_NAME = 'venv'
         MLFLOW_URI = 'http://localhost:5000'
     }
@@ -56,7 +56,11 @@ pipeline {
         stage('Health Check API') {
             steps {
                 bat """
-                    curl http://localhost:8000/health
+                    for /L %%i in (1,1,10) do (
+                        curl http://localhost:8000/health && exit /b 0
+                        ping 127.0.0.1 -n 3 > nul
+                    )
+                    exit /b 1
                 """
             }
         }
@@ -64,6 +68,10 @@ pipeline {
 
     post {
         always {
+            echo "🛑 Terminando procesos uvicorn/mlflow..."
+            bat 'taskkill /IM uvicorn.exe /F || echo uvicorn no estaba corriendo'
+            bat 'taskkill /IM mlflow.exe /F || echo mlflow no estaba corriendo'
+
             echo "🧹 Limpiando workspace..."
             cleanWs()
         }
