@@ -30,7 +30,7 @@ pipeline {
                 bat """
                     mkdir mlruns
                     start /B cmd /c "call %VENV_NAME%\\Scripts\\activate.bat && mlflow server --backend-store-uri ./mlruns --default-artifact-root ./mlruns --host 127.0.0.1 --port 5000"
-                    timeout /t 10 /nobreak
+                    ping 127.0.0.1 -n 11 > nul
                 """
             }
         }
@@ -48,7 +48,7 @@ pipeline {
             steps {
                 bat """
                     start /B cmd /c "call %VENV_NAME%\\Scripts\\activate.bat && uvicorn src.api.main:app --host 127.0.0.1 --port 8000"
-                    timeout /t 5 /nobreak
+                    ping 127.0.0.1 -n 6 > nul
                 """
             }
         }
