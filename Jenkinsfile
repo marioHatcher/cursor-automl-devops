@@ -65,21 +65,19 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            echo "🛑 Terminando procesos uvicorn/mlflow..."
-            bat 'taskkill /IM uvicorn.exe /F || echo uvicorn no estaba corriendo'
-            bat 'taskkill /IM mlflow.exe /F || echo mlflow no estaba corriendo'
-
-            echo "🧹 Limpiando workspace..."
-            cleanWs()
-        }
-        success {
-            echo '✅ Pipeline completado exitosamente 🎉'
-        }
-        failure {
-            echo '❌ Pipeline falló 😢'
-        }
+post {
+    always {
+        echo 'Cleaning up...'
+        bat 'taskkill /IM uvicorn.exe /F || echo uvicorn not running'
+        bat 'taskkill /IM mlflow.exe /F || echo mlflow not running'
+        echo 'Cleaning workspace...'
+        cleanWs()
     }
+    success {
+        echo 'Pipeline completed successfully!'
+    }
+    failure {
+        echo 'Pipeline failed.'
+    }
+}
 }
