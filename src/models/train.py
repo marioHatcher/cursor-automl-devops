@@ -39,7 +39,7 @@ def train_model(data: pd.DataFrame):
               normalize=PYCARET_SETUP_CONFIG['normalize'],
               transformation=PYCARET_SETUP_CONFIG['transformation'],
               ignore_features=PYCARET_SETUP_CONFIG['ignore_features'],
-              data_split_shuffle=True, silent=True, verbose=False)
+              data_split_shuffle=True)
 
         best_model = compare_models(n_select=1)
         tuned_model = tune_model(best_model)
